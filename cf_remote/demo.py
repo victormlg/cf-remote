@@ -1,10 +1,13 @@
 import os
 import json
+import hashlib
+import secrets
+import string
 from posixpath import dirname, join
 
 from cf_remote import log
 from cf_remote.paths import cf_remote_dir
-from cf_remote.utils import save_file
+from cf_remote.utils import save_file, strip_user
 from cf_remote.ssh import scp, ssh_sudo, ssh_cmd, auto_connect
 
 
@@ -22,18 +25,46 @@ def agent_run(data, *, connection=None):
     log.debug(output)
 
 
+def generate_password():
+    """Generate credentials for the demo admin user.
+
+    Returns (password, salt, sha) where sha is the hex SHA-256 of
+    salt + password concatenated with no separator. The password is meant
+    to be shown to the user; only the salt and sha are sent to the host.
+    """
+    password = "".join(secrets.choice(string.ascii_letters) for _ in range(14))
+    salt = "".join(secrets.choice(string.ascii_letters) for _ in range(10))
+    sha = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    return password, salt, sha
+
+
 @auto_connect
-def disable_password_dialog(host, *, connection=None):
+def disable_password_dialog(host, salt, sha, *, connection=None):
     print("Disabling password change on hub: '{}'".format(host))
 
-    query_path = join(dirname(__file__), "demo.sql")
-    scp(query_path, host, connection=connection)
+    template_path = join(dirname(__file__), "demo.sql")
+    with open(template_path, "r") as f:
+        sql = f.read()
+    sql = sql.replace("__CF_REMOTE_SHA__", sha).replace("__CF_REMOTE_SALT__", salt)
 
-    query = os.path.basename(query_path)
-    ssh_sudo(
-        connection,
-        '/var/cfengine/bin/psql cfsettings -f "{}"'.format(query),
-    )
+    safe_host = strip_user(host).replace("/", "_").replace(":", "_")
+    rendered_path = os.path.join(cf_remote_dir(), "demo-{}.sql".format(safe_host))
+    save_file(rendered_path, sql)
+    try:
+        scp(rendered_path, host, connection=connection)
+        query = os.path.basename(rendered_path)
+        try:
+            ssh_sudo(
+                connection,
+                '/var/cfengine/bin/psql cfsettings -f "{}"'.format(query),
+            )
+        finally:
+            ssh_cmd(connection, 'rm -f "{}"'.format(query))
+    finally:
+        try:
+            os.remove(rendered_path)
+        except OSError as e:
+            log.warning("Could not remove local '{}': {}".format(rendered_path, e))
 
 
 def def_json(call_collect=False):

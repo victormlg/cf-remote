@@ -14,6 +14,7 @@ from cf_remote.remote import (
     transfer_file,
     deploy_masterfiles,
 )
+import cf_remote.demo as demo_lib
 from cf_remote.packages import Releases
 from cf_remote.web import download_package
 from cf_remote.paths import (
@@ -229,12 +230,18 @@ def install(
             "\n".join(bootstrap + [""]),
         )
 
+    hub_passwords = {}
     hub_jobs = []
     if hubs:
         show_host_info = len(hubs) == 1
         if type(hubs) is str:
             hubs = [hubs]
         for index, hub in enumerate(hubs):
+            if demo:
+                password, salt, sha = demo_lib.generate_password()
+                hub_passwords[hub] = password
+            else:
+                salt, sha = None, None
             hub_jobs.append(
                 HostInstaller(
                     hub,
@@ -249,6 +256,8 @@ def install(
                     remote_download=remote_download,
                     trust_keys=trust_keys,
                     insecure=insecure,
+                    demo_salt=salt,
+                    demo_sha=sha,
                 )
             )
 
@@ -293,8 +302,8 @@ def install(
     if demo and hubs:
         for hub in hubs:
             print(
-                "Your demo hub is ready: https://{}/ (Username: admin, Password: password)".format(
-                    strip_user(hub)
+                "Your demo hub is ready: https://{}/ (Username: admin, Password: {})".format(
+                    strip_user(hub), hub_passwords[hub]
                 )
             )
 

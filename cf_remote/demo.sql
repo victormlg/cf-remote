@@ -13,8 +13,8 @@ INSERT INTO "users" ("username",
                      "roles",
                      "changetimestamp")
 SELECT 'admin',
-       'SHA=7f062dc2ef82d2b87f012fc17d70c372aa4e2883d9b6c5c1cc7382a5c868b724',
-       'eWAbKQmxNP',
+       'SHA=__CF_REMOTE_SHA__',
+       '__CF_REMOTE_SALT__',
        'admin',
        'admin@organisation.com',
        FALSE,
@@ -23,5 +23,5 @@ SELECT 'admin',
        now() ON CONFLICT (username,
                           EXTERNAL) DO
 UPDATE
-SET password = 'SHA=7f062dc2ef82d2b87f012fc17d70c372aa4e2883d9b6c5c1cc7382a5c868b724',
-    salt = 'eWAbKQmxNP';
+SET password = 'SHA=__CF_REMOTE_SHA__',
+    salt = '__CF_REMOTE_SALT__';
