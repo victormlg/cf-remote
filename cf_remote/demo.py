@@ -39,7 +39,7 @@ def generate_password():
 
 
 @auto_connect
-def disable_password_dialog(host, salt, sha, *, connection=None):
+def setup_demo_admin_user(host, salt, sha, *, connection=None):
     print("Setting up demo admin user on hub: '{}'".format(host))
 
     template_path = join(dirname(__file__), "demo.sql")

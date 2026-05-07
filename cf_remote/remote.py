@@ -760,7 +760,7 @@ def install_host(
                 host, connection=connection, call_collect=call_collect
             )
             demo_lib.agent_run(data, connection=connection)
-            demo_lib.disable_password_dialog(
+            demo_lib.setup_demo_admin_user(
                 host, demo_salt, demo_sha, connection=connection
             )
         demo_lib.agent_run(data, connection=connection)
