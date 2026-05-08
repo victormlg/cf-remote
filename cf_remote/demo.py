@@ -7,7 +7,7 @@ from posixpath import dirname, join
 
 from cf_remote import log
 from cf_remote.paths import cf_remote_dir
-from cf_remote.utils import save_file, strip_user
+from cf_remote.utils import mkdir, save_file, strip_user
 from cf_remote.ssh import scp, ssh_sudo, ssh_cmd, auto_connect
 
 
@@ -48,8 +48,16 @@ def setup_demo_admin_user(host, salt, sha, *, connection=None):
     sql = sql.replace("__CF_REMOTE_SHA__", sha).replace("__CF_REMOTE_SALT__", salt)
 
     safe_host = strip_user(host).replace("/", "_").replace(":", "_")
+    mkdir(cf_remote_dir())
     rendered_path = os.path.join(cf_remote_dir(), "demo-{}.sql".format(safe_host))
-    save_file(rendered_path, sql)
+    # The SQL file contains the password salt and SHA, so create it with
+    # 0600 perms from the start (O_EXCL ensures we don't reuse a pre-existing
+    # file that might have looser permissions).
+    if os.path.exists(rendered_path):
+        os.remove(rendered_path)
+    fd = os.open(rendered_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(sql)
     try:
         scp(rendered_path, host, connection=connection)
         query = os.path.basename(rendered_path)
