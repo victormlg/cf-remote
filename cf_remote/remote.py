@@ -661,7 +661,9 @@ def install_host(
     show_info=True,
     remote_download=False,
     trust_keys=None,
-    insecure=False
+    insecure=False,
+    demo_salt=None,
+    demo_sha=None,
 ):
     data = get_info(host, connection=connection)
     if show_info:
@@ -758,7 +760,9 @@ def install_host(
                 host, connection=connection, call_collect=call_collect
             )
             demo_lib.agent_run(data, connection=connection)
-            demo_lib.disable_password_dialog(host, connection=connection)
+            demo_lib.setup_demo_admin_user(
+                host, demo_salt, demo_sha, connection=connection
+            )
         demo_lib.agent_run(data, connection=connection)
     return 0
 

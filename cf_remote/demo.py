@@ -1,5 +1,10 @@
 import os
 import json
+import hashlib
+import secrets
+import shutil
+import string
+import tempfile
 from posixpath import dirname, join
 
 from cf_remote import log
@@ -22,18 +27,47 @@ def agent_run(data, *, connection=None):
     log.debug(output)
 
 
+def generate_password():
+    """Generate credentials for the demo admin user.
+
+    Returns (password, salt, sha) where sha is the hex SHA-256 of
+    salt + password concatenated with no separator. The password is meant
+    to be shown to the user; only the salt and sha are sent to the host.
+    """
+    password = "".join(secrets.choice(string.ascii_letters) for _ in range(14))
+    salt = "".join(secrets.choice(string.ascii_letters) for _ in range(10))
+    sha = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    return password, salt, sha
+
+
 @auto_connect
-def disable_password_dialog(host, *, connection=None):
-    print("Disabling password change on hub: '{}'".format(host))
+def setup_demo_admin_user(host, salt, sha, *, connection=None):
+    print("Setting up demo admin user on hub: '{}'".format(host))
 
-    query_path = join(dirname(__file__), "demo.sql")
-    scp(query_path, host, connection=connection)
+    template_path = join(dirname(__file__), "demo.sql")
+    with open(template_path, "r") as f:
+        sql = f.read()
+    sql = sql.replace("__CF_REMOTE_SHA__", sha).replace("__CF_REMOTE_SALT__", salt)
 
-    query = os.path.basename(query_path)
-    ssh_sudo(
-        connection,
-        '/var/cfengine/bin/psql cfsettings -f "{}"'.format(query),
-    )
+    # The SQL file contains the password salt and SHA. mkdtemp creates the
+    # directory with 0700 perms, so anything inside is protected from other
+    # local users.
+    tmp_dir = tempfile.mkdtemp(prefix="cf-remote-demo-")
+    try:
+        rendered_path = os.path.join(tmp_dir, "demo.sql")
+        with open(rendered_path, "w") as f:
+            f.write(sql)
+        scp(rendered_path, host, connection=connection)
+        query = os.path.basename(rendered_path)
+        try:
+            ssh_sudo(
+                connection,
+                '/var/cfengine/bin/psql cfsettings -f "{}"'.format(query),
+            )
+        finally:
+            ssh_cmd(connection, 'rm -f "{}"'.format(query))
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def def_json(call_collect=False):
