@@ -12,6 +12,7 @@ from cf_remote.utils import (
     exit_success,
     expand_list_from_file,
     is_file_string,
+    migrate_config_paths,
 )
 from cf_remote.utils import strip_user, read_json, is_package_url, cache
 from cf_remote.packages import Releases
@@ -685,6 +686,8 @@ def main() -> int:
 
     The only thing we want to do here is call _main() and handle exceptions (errors).
     """
+    migrate_config_paths()
+
     if os.getenv("CFBACKTRACE") == "1":
         r = _main()
         assert type(r) is int

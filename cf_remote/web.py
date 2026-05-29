@@ -23,7 +23,7 @@ def get_json(url):
         data = json.loads(r.read().decode(), object_pairs_hook=OrderedDict)
 
     filename = os.path.basename(url)
-    dir = cf_remote_dir("json")
+    dir = cf_remote_dir("json", in_cache=True)
     path = os.path.join(dir, filename)
     log.debug("Saving '{}' to '{}'".format(url, path))
     write_json(path, data)

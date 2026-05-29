@@ -663,7 +663,7 @@ def install_host(
     trust_keys=None,
     insecure=False,
     demo_salt=None,
-    demo_sha=None,
+    demo_sha=None
 ):
     data = get_info(host, connection=connection)
     if show_info:
