@@ -7,7 +7,7 @@ def path_append(dir, subdir):
     return dir if not subdir else os.path.join(dir, subdir)
 
 
-def cfengine_dir(subdir=None):
+def cfengine_dir(subdir=None, in_cache=False):
     override_dir = os.getenv("CF_REMOTE_DIR")
 
     if override_dir:
@@ -23,11 +23,11 @@ def cfengine_dir(subdir=None):
 
         return path_append(override_dir, subdir)
 
-    return path_append("~/.cfengine/", subdir)
+    return path_append("~/.%s/cfengine/" % ("cache" if in_cache else "config"), subdir)
 
 
-def cf_remote_dir(subdir=None):
-    return path_append(cfengine_dir("cf-remote"), subdir)
+def cf_remote_dir(subdir=None, in_cache=False):
+    return path_append(cfengine_dir("cf-remote", in_cache=in_cache), subdir)
 
 
 def cf_remote_file(fname=None):
@@ -35,7 +35,7 @@ def cf_remote_file(fname=None):
 
 
 def cf_remote_packages_dir(subdir=None):
-    return path_append(cf_remote_dir("packages"), subdir)
+    return path_append(cf_remote_dir("packages", in_cache=True), subdir)
 
 
 CLOUD_CONFIG_FNAME = "cloud_config.json"

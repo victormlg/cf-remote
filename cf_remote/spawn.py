@@ -778,7 +778,7 @@ def spawn_vm_in_vagrant(
     vagrantdir = cf_remote_dir(os.path.join("vagrant", name))
     os.makedirs(vagrantdir, exist_ok=True)
 
-    # Copy Vagrantfile to .cfengine/cf-remote/vagrant
+    # Copy Vagrantfile to ~/.config/cfengine/cf-remote/vagrant
     vagrantfile = join(dirname(__file__), "Vagrantfile")
     copy_file(vagrantfile, os.path.join(vagrantdir, "Vagrantfile"))
 
