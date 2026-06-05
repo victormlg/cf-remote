@@ -263,8 +263,11 @@ def install(
 
     errors = 0
     if hub_jobs:
-        with Pool(len(hub_jobs)) as hubs_install_pool:
-            hubs_install_pool.map(lambda job: job.run(), hub_jobs)
+        try:
+            with Pool(len(hub_jobs)) as hubs_install_pool:
+                hubs_install_pool.map(lambda job: job.run(), hub_jobs)
+        except KeyboardInterrupt:
+            return 1
         errors = sum(job.errors for job in hub_jobs)
 
     if errors > 0:
