@@ -1,7 +1,7 @@
 import os
 import json
 import hashlib
-import secrets
+from random import SystemRandom
 import shutil
 import string
 import tempfile
@@ -34,8 +34,8 @@ def generate_password():
     salt + password concatenated with no separator. The password is meant
     to be shown to the user; only the salt and sha are sent to the host.
     """
-    password = "".join(secrets.choice(string.ascii_letters) for _ in range(14))
-    salt = "".join(secrets.choice(string.ascii_letters) for _ in range(10))
+    password = "".join(SystemRandom().choice(string.ascii_letters) for _ in range(14))
+    salt = "".join(SystemRandom().choice(string.ascii_letters) for _ in range(10))
     sha = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
     return password, salt, sha
 
